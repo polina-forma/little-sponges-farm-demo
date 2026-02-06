@@ -1,187 +1,262 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * DemoApp - Ultra-simplified for non-readers
+ * DemoApp - Visual-first demo for non-readers
  *
- * Design principles:
- * - NO TEXT on screen (kids can't read)
- * - Large visuals only
- * - Voice prompts in English
- * - Only 2 animals: cow & chicken
- * - Buttons show animal names for demo (will be voice-only in production)
+ * Fixed: Audio requires user click first (Start button)
+ * Added: Back/forward navigation
+ * Added: Real photos from Unsplash
  */
 
-const DEMO_FLOW = [
+const EXERCISES = [
   {
-    animal: '🐄',
+    id: 'cow',
+    image: 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=600',
     englishName: 'cow',
     spanishName: 'la vaca',
-    prompt: "What is this?",
-    correctResponse: "¡Muy bien! La vaca!",
-    tryAgainResponse: "Say it in Spanish! La vaca!"
+    askPrompt: "What is this?",
+    correctPrompt: "Muy bien! La vaca! Great job!",
+    tryAgainPrompt: "Say it in Spanish! La vaca!"
   },
   {
-    animal: '🐔',
+    id: 'chicken',
+    image: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=600',
     englishName: 'chicken',
     spanishName: 'el pollo',
-    prompt: "What is this?",
-    correctResponse: "¡Excelente! El pollo!",
-    tryAgainResponse: "Say it in Spanish! El pollo!"
+    askPrompt: "What is this?",
+    correctPrompt: "Excelente! El pollo! Amazing!",
+    tryAgainPrompt: "Say it in Spanish! El pollo!"
   }
 ];
 
 function DemoApp() {
-  const [step, setStep] = useState(0);
-  const [phase, setPhase] = useState('asking'); // 'asking' | 'feedback' | 'celebration' | 'done'
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [phase, setPhase] = useState('start');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
-  const currentAnimal = DEMO_FLOW[step];
+  const exercise = EXERCISES[currentIndex];
 
-  // Speak on load and when step changes
-  useEffect(() => {
-    if (phase === 'asking' && currentAnimal) {
-      speak(currentAnimal.prompt);
+  // Speak function - only works after user interaction
+  const speak = useCallback((text) => {
+    if (!window.speechSynthesis) {
+      console.log('Speech synthesis not available');
+      return;
     }
-  }, [step, phase]);
 
-  const speak = (text) => {
-    if (!window.speechSynthesis) return;
-
-    setIsSpeaking(true);
     window.speechSynthesis.cancel();
+    setIsSpeaking(true);
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.8;
+    utterance.rate = 0.85;
     utterance.pitch = 1.1;
+    utterance.volume = 1;
 
     utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = (e) => {
+      console.log('Speech error:', e);
+      setIsSpeaking(false);
+    };
 
+    // Small delay helps with some browsers
     setTimeout(() => {
       window.speechSynthesis.speak(utterance);
-    }, 100);
+    }, 50);
+  }, []);
+
+  // Start the demo (enables audio)
+  const handleStart = () => {
+    // Initialize speech synthesis with a user gesture
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+    }
+    setPhase('asking');
+    setTimeout(() => speak(exercise.askPrompt), 300);
   };
 
-  const handleAnswer = (answeredInSpanish) => {
-    if (answeredInSpanish) {
-      // Correct! Celebrate
-      speak(currentAnimal.correctResponse);
+  // Handle answer
+  const handleAnswer = (isSpanish) => {
+    if (isSpanish) {
+      speak(exercise.correctPrompt);
       setShowCelebration(true);
       setPhase('celebration');
 
       setTimeout(() => {
         setShowCelebration(false);
-        // Move to next animal or finish
-        if (step < DEMO_FLOW.length - 1) {
-          setStep(step + 1);
-          setPhase('asking');
-        } else {
-          setPhase('done');
-          speak("Amazing job! You're learning Spanish!");
-        }
+        setPhase('asking');
       }, 2500);
     } else {
-      // Answered in English - prompt to try Spanish
-      speak(currentAnimal.tryAgainResponse);
+      speak(exercise.tryAgainPrompt);
       setPhase('feedback');
     }
   };
 
+  // Navigation
+  const goNext = () => {
+    if (currentIndex < EXERCISES.length - 1) {
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      setPhase('asking');
+      setTimeout(() => speak(EXERCISES[nextIndex].askPrompt), 300);
+    }
+  };
+
+  const goPrev = () => {
+    if (currentIndex > 0) {
+      const prevIndex = currentIndex - 1;
+      setCurrentIndex(prevIndex);
+      setPhase('asking');
+      setTimeout(() => speak(EXERCISES[prevIndex].askPrompt), 300);
+    }
+  };
+
+  // Replay audio
+  const replay = () => {
+    speak(exercise.askPrompt);
+  };
+
+  // Restart
   const restart = () => {
-    setStep(0);
-    setPhase('asking');
+    setCurrentIndex(0);
+    setPhase('start');
     setShowCelebration(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-400 to-green-400 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-sky-400 to-green-400 flex flex-col items-center justify-center p-4 relative overflow-hidden">
 
-      {/* Main Animal Display */}
-      <motion.div
-        className="relative"
-        key={step}
-        initial={{ scale: 0, rotate: -10 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: 'spring', duration: 0.5 }}
-      >
-        {/* Animal Circle */}
-        <div className="w-64 h-64 md:w-80 md:h-80 bg-white rounded-full shadow-2xl flex items-center justify-center border-8 border-green-500">
-          <motion.span
-            className="text-[120px] md:text-[160px]"
-            animate={isSpeaking ? { scale: [1, 1.1, 1] } : { y: [0, -10, 0] }}
-            transition={{ duration: isSpeaking ? 0.3 : 2, repeat: Infinity }}
-          >
-            {phase === 'done' ? '🌟' : currentAnimal?.animal}
-          </motion.span>
-        </div>
-
-        {/* Speaking indicator */}
-        {isSpeaking && (
-          <motion.div
-            className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full flex items-center gap-2"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <motion.span
-              animate={{ scale: [1, 1.3, 1] }}
-              transition={{ duration: 0.5, repeat: Infinity }}
-            >
-              🔊
-            </motion.span>
-          </motion.div>
-        )}
-      </motion.div>
-
-      {/* Response Buttons - Only visible when not speaking and in asking/feedback phase */}
-      <AnimatePresence>
-        {!isSpeaking && (phase === 'asking' || phase === 'feedback') && currentAnimal && (
-          <motion.div
-            className="mt-8 flex flex-col gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            {/* Spanish answer button (correct) */}
-            <motion.button
-              onClick={() => handleAnswer(true)}
-              className="bg-green-500 hover:bg-green-600 text-white text-2xl font-bold px-8 py-4 rounded-2xl shadow-lg flex items-center gap-3"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <span className="text-3xl">🇪🇸</span>
-              {currentAnimal.spanishName}
-            </motion.button>
-
-            {/* English answer button (try again) */}
-            <motion.button
-              onClick={() => handleAnswer(false)}
-              className="bg-blue-400 hover:bg-blue-500 text-white text-2xl font-bold px-8 py-4 rounded-2xl shadow-lg flex items-center gap-3"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <span className="text-3xl">🇺🇸</span>
-              {currentAnimal.englishName}
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Done state - Restart button */}
-      {phase === 'done' && !isSpeaking && (
-        <motion.button
-          onClick={restart}
-          className="mt-8 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 text-2xl font-bold px-8 py-4 rounded-2xl shadow-lg"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+      {/* ===== START SCREEN ===== */}
+      {phase === 'start' && (
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
         >
-          🔄 Play Again!
-        </motion.button>
+          <h1 className="text-5xl font-bold text-white mb-6 drop-shadow-lg">
+            🌻 Farm Animals
+          </h1>
+          <p className="text-2xl text-white/90 mb-10">Learn Spanish!</p>
+          <motion.button
+            onClick={handleStart}
+            className="bg-green-500 hover:bg-green-600 text-white text-4xl font-bold px-16 py-8 rounded-3xl shadow-2xl"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            ▶️ Start
+          </motion.button>
+        </motion.div>
       )}
 
-      {/* Celebration Overlay */}
+      {/* ===== EXERCISE SCREEN ===== */}
+      {phase !== 'start' && (
+        <>
+          {/* Left Arrow */}
+          <motion.button
+            onClick={goPrev}
+            disabled={currentIndex === 0}
+            className={`fixed left-4 top-1/2 -translate-y-1/2 text-7xl z-20
+              ${currentIndex === 0 ? 'opacity-20 cursor-not-allowed' : 'opacity-90 hover:opacity-100 cursor-pointer'}`}
+            whileHover={currentIndex > 0 ? { scale: 1.2 } : {}}
+            whileTap={currentIndex > 0 ? { scale: 0.9 } : {}}
+          >
+            ⬅️
+          </motion.button>
+
+          {/* Right Arrow */}
+          <motion.button
+            onClick={goNext}
+            disabled={currentIndex === EXERCISES.length - 1}
+            className={`fixed right-4 top-1/2 -translate-y-1/2 text-7xl z-20
+              ${currentIndex === EXERCISES.length - 1 ? 'opacity-20 cursor-not-allowed' : 'opacity-90 hover:opacity-100 cursor-pointer'}`}
+            whileHover={currentIndex < EXERCISES.length - 1 ? { scale: 1.2 } : {}}
+            whileTap={currentIndex < EXERCISES.length - 1 ? { scale: 0.9 } : {}}
+          >
+            ➡️
+          </motion.button>
+
+          {/* Animal Image */}
+          <motion.div
+            key={exercise.id}
+            className="relative"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ type: 'spring', duration: 0.4 }}
+          >
+            <div className="w-72 h-72 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-3xl overflow-hidden shadow-2xl border-8 border-white">
+              <img
+                src={exercise.image}
+                alt={exercise.englishName}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+            </div>
+
+            {/* Sound Button */}
+            <motion.button
+              onClick={replay}
+              disabled={isSpeaking}
+              className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white text-5xl p-4 rounded-full shadow-xl"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              {isSpeaking ? '🔊' : '🔈'}
+            </motion.button>
+          </motion.div>
+
+          {/* Answer Buttons */}
+          <AnimatePresence>
+            {!isSpeaking && (phase === 'asking' || phase === 'feedback') && (
+              <motion.div
+                className="mt-16 flex flex-col gap-5"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >
+                {/* Spanish (correct) */}
+                <motion.button
+                  onClick={() => handleAnswer(true)}
+                  className="bg-green-500 hover:bg-green-600 text-white text-3xl font-bold px-12 py-6 rounded-2xl shadow-xl flex items-center gap-4"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span className="text-4xl">🇪🇸</span>
+                  {exercise.spanishName}
+                </motion.button>
+
+                {/* English (try again) */}
+                <motion.button
+                  onClick={() => handleAnswer(false)}
+                  className="bg-blue-400 hover:bg-blue-500 text-white text-3xl font-bold px-12 py-6 rounded-2xl shadow-xl flex items-center gap-4"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span className="text-4xl">🇺🇸</span>
+                  {exercise.englishName}
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Progress Dots */}
+          <div className="fixed bottom-8 flex gap-4">
+            {EXERCISES.map((_, i) => (
+              <div
+                key={i}
+                className={`w-5 h-5 rounded-full transition-all ${
+                  i === currentIndex
+                    ? 'bg-white scale-125'
+                    : 'bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ===== CELEBRATION ===== */}
       <AnimatePresence>
         {showCelebration && (
           <motion.div
@@ -190,64 +265,48 @@ function DemoApp() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Stars explosion */}
-            {[...Array(12)].map((_, i) => (
+            {[...Array(15)].map((_, i) => (
               <motion.span
                 key={i}
-                className="absolute text-5xl"
+                className="absolute text-6xl"
                 initial={{ scale: 0, x: 0, y: 0 }}
                 animate={{
                   scale: [0, 1.5, 1],
-                  x: (Math.random() - 0.5) * 300,
-                  y: (Math.random() - 0.5) * 300,
+                  x: (Math.random() - 0.5) * 500,
+                  y: (Math.random() - 0.5) * 500,
                   opacity: [1, 1, 0]
                 }}
-                transition={{ duration: 1, delay: i * 0.05 }}
+                transition={{ duration: 1.2, delay: i * 0.04 }}
               >
-                {['⭐', '🌟', '✨'][i % 3]}
+                {['⭐', '🌟', '✨', '🎉'][i % 4]}
               </motion.span>
             ))}
 
-            {/* Big star */}
             <motion.div
-              className="bg-gradient-to-r from-yellow-400 to-orange-400 px-12 py-6 rounded-3xl shadow-2xl"
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: [0, 1.2, 1], rotate: 0 }}
+              className="bg-gradient-to-r from-yellow-400 to-orange-500 px-20 py-10 rounded-3xl shadow-2xl"
+              initial={{ scale: 0, rotate: -15 }}
+              animate={{ scale: [0, 1.3, 1], rotate: 0 }}
             >
-              <span className="text-6xl">⭐</span>
+              <span className="text-8xl">⭐</span>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Progress dots */}
-      <div className="fixed bottom-8 flex gap-3">
-        {DEMO_FLOW.map((_, i) => (
-          <motion.div
-            key={i}
-            className={`w-4 h-4 rounded-full ${
-              i < step ? 'bg-green-500' :
-              i === step ? 'bg-white' :
-              'bg-white/40'
-            }`}
-            animate={i === step ? { scale: [1, 1.3, 1] } : {}}
-            transition={{ duration: 1, repeat: Infinity }}
-          />
-        ))}
-      </div>
-
-      {/* Demo mode badge */}
-      <div className="fixed top-4 right-4 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold">
+      {/* Demo Badge */}
+      <div className="fixed top-4 right-4 bg-yellow-400 text-yellow-900 px-4 py-2 rounded-full font-bold text-lg shadow-lg">
         🎬 DEMO
       </div>
 
-      {/* Restart button (always visible) */}
-      <button
-        onClick={restart}
-        className="fixed top-4 left-4 bg-white/80 hover:bg-white px-3 py-1 rounded-full text-sm"
-      >
-        🔄
-      </button>
+      {/* Restart Button */}
+      {phase !== 'start' && (
+        <button
+          onClick={restart}
+          className="fixed top-4 left-4 bg-white/90 hover:bg-white px-4 py-2 rounded-full font-medium shadow-lg"
+        >
+          🔄 Restart
+        </button>
+      )}
     </div>
   );
 }
