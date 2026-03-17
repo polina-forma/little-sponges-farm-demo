@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Little Sponges - Design Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Nunito',system-ui,sans-serif; background:#f0f0f0; }
+.preview-label { text-align:center; padding:12px; background:#333; color:#fff; font-size:14px; font-weight:700; letter-spacing:1px; }
+.phone-frame { width:390px; height:844px; margin:30px auto; border-radius:40px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); border:8px solid #1a1a1a; position:relative; }
+.screen { width:100%; height:100%; overflow:hidden; position:relative; }
+
+/* Brand colors */
+:root {
+  --gold:#F7AD00; --gold-light:#FFC940; --teal:#05544B; --teal-light:#0A7B6B;
+  --cyan:#5BC0DE; --cyan-dark:#3AAFCF; --cream:#FFF9EC; --gray:#728188;
+}
+
+/* ===== START SCREEN ===== */
+.start-screen {
+  background: linear-gradient(135deg, #FFF9EC 0%, #E8F8F5 50%, #FFF3D6 100%);
+  height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 30px;
+}
+.start-logo { font-size:72px; margin-bottom:12px; }
+.start-title { font-size:32px; font-weight:900; color:var(--teal); text-align:center; line-height:1.2; }
+.start-title span { color:var(--gold); }
+.start-subtitle { color:var(--gray); font-size:16px; margin:8px 0 30px; font-weight:600; }
+.start-btn {
+  background:var(--gold); color:#fff; border:none; padding:18px 48px; border-radius:50px;
+  font-size:22px; font-weight:800; font-family:inherit; cursor:pointer;
+  box-shadow:0 6px 20px rgba(247,173,0,0.4); display:flex; align-items:center; gap:12px;
+}
+.start-btn .play-icon { font-size:28px; }
+.start-animals { display:flex; gap:16px; margin-top:40px; }
+.start-animals span { font-size:36px; opacity:0.7; }
+
+/* ===== EXERCISE SCREEN ===== */
+.exercise-screen {
+  background: linear-gradient(135deg, #FFF9EC 0%, #E8F8F5 50%, #FFF3D6 100%);
+  height:100%; display:flex; flex-direction:column;
+}
+.ex-header {
+  background:var(--teal); padding:14px 20px; display:flex; align-items:center; justify-content:space-between;
+}
+.ex-header-left { display:flex; align-items:center; gap:8px; }
+.ex-header h1 { color:var(--gold); font-size:18px; font-weight:800; }
+.ex-header .sunflower { font-size:22px; }
+.ex-score { background:rgba(255,255,255,0.15); border-radius:20px; padding:6px 14px; color:#fff; font-size:14px; font-weight:700; display:flex; align-items:center; gap:4px; }
+
+.ex-subtitle-bar {
+  position:absolute; top:70px; left:16px; z-index:10;
+  color:var(--cyan); text-shadow:1px 1px 2px rgba(0,0,0,0.15);
+  font-weight:700; font-size:16px; display:flex; align-items:center; gap:6px;
+  background:rgba(255,255,255,0.85); padding:6px 14px; border-radius:20px;
+}
+
+.ex-teacher-avatar {
+  position:absolute; top:70px; right:16px; z-index:10;
+  width:70px; height:70px; border-radius:50%; overflow:hidden;
+  border:3px solid var(--gold); box-shadow:0 4px 12px rgba(0,0,0,0.15); background:#fff;
+}
+.avatar-svg { width:100%; height:100%; }
+
+.ex-image-area {
+  flex:1; display:flex; align-items:center; justify-content:center; padding:20px; position:relative;
+}
+.ex-image-card {
+  width:280px; height:280px; border-radius:24px; overflow:hidden;
+  box-shadow:0 8px 30px rgba(0,0,0,0.15); border:4px solid #fff;
+}
+.ex-image-card img { width:100%; height:100%; object-fit:cover; }
+
+.ex-question-area {
+  background:#fff; border-radius:24px 24px 0 0; padding:24px 20px 20px;
+  box-shadow:0 -4px 20px rgba(0,0,0,0.08);
+}
+.ex-question { color:var(--teal); font-size:20px; font-weight:800; text-align:center; margin-bottom:4px; }
+.ex-question-es { color:var(--gold); font-size:16px; font-weight:700; text-align:center; margin-bottom:16px; }
+
+.ex-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.ex-option {
+  padding:14px; border-radius:16px; border:3px solid #e5e7eb; background:#fff;
+  font-size:18px; font-weight:700; text-align:center; cursor:pointer; font-family:inherit;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.ex-option.correct { border-color:#22c55e; background:#f0fdf4; }
+.ex-option.selected { border-color:var(--gold); background:#FFF9EC; }
+
+.ex-progress { display:flex; gap:6px; justify-content:center; padding:10px; }
+.ex-dot { width:10px; height:10px; border-radius:50%; }
+.ex-dot.done { background:var(--gold); }
+.ex-dot.current { background:var(--teal); transform:scale(1.3); }
+.ex-dot.upcoming { background:#d1d5db; }
+
+/* ===== FROG CHARACTER ===== */
+.frog-overlay {
+  position:absolute; bottom:160px; left:50%; transform:translateX(-50%);
+  z-index:20; display:flex; flex-direction:column; align-items:center;
+}
+.frog-bubble {
+  background:var(--gold); color:#fff; padding:10px 18px; border-radius:20px;
+  font-weight:800; font-size:14px; text-align:center; margin-bottom:8px;
+  box-shadow:0 4px 15px rgba(247,173,0,0.4); max-width:220px;
+}
+.frog-emoji { font-size:64px; }
+
+/* ===== COMPLETE SCREEN ===== */
+.complete-screen {
+  background: linear-gradient(135deg, #FFF9EC 0%, #E8F8F5 50%, #FFF3D6 100%);
+  height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 30px;
+}
+.complete-trophy { font-size:80px; margin-bottom:16px; }
+.complete-title { font-size:32px; font-weight:900; color:var(--teal); text-align:center; }
+.complete-subtitle { color:var(--gold); font-size:20px; font-weight:700; margin:8px 0 24px; }
+.complete-stats {
+  background:#fff; border-radius:20px; padding:20px 30px; width:100%;
+  box-shadow:0 4px 20px rgba(0,0,0,0.08); margin-bottom:24px;
+}
+.stat-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f3f4f6; }
+.stat-row:last-child { border:none; }
+.stat-label { color:var(--gray); font-weight:600; }
+.stat-value { color:var(--teal); font-weight:800; }
+.complete-btn {
+  background:var(--teal); color:#fff; border:none; padding:16px 40px; border-radius:50px;
+  font-size:18px; font-weight:800; font-family:inherit; cursor:pointer;
+  box-shadow:0 6px 20px rgba(5,84,75,0.3);
+}
+
+/* Layout */
+.screens-container { display:flex; flex-wrap:wrap; justify-content:center; gap:40px; padding:20px 40px 60px; }
+</style>
+</head>
+<body>
+
+<div class="preview-label">LITTLE SPONGES — FRONTEND REDESIGN PREVIEW — 3 KEY SCREENS</div>
+
+<div class="screens-container">
+
+<!-- SCREEN 1: Start Screen -->
+<div>
+  <div style="text-align:center;padding:10px;font-weight:700;color:#555;font-size:14px;">① START SCREEN</div>
+  <div class="phone-frame">
+    <div class="screen start-screen">
+      <div class="start-logo">🌻</div>
+      <div class="start-title"><span>Little Sponges</span><br>Farm Adventure</div>
+      <div class="start-subtitle">La Granja • Learn Spanish!</div>
+      <div class="start-btn">
+        <span class="play-icon">▶</span>
+        ¡Vamos! Let's Go!
+      </div>
+      <div class="start-animals">
+        <span>🐄</span><span>🐔</span><span>🐴</span><span>🐷</span><span>🐑</span><span>🦆</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: Exercise Screen (with teacher avatar, subtitle, frog) -->
+<div>
+  <div style="text-align:center;padding:10px;font-weight:700;color:#555;font-size:14px;">② EXERCISE SCREEN (with Frog after 3 correct)</div>
+  <div class="phone-frame">
+    <div class="screen exercise-screen">
+      <!-- Header -->
+      <div class="ex-header">
+        <div class="ex-header-left">
+          <span class="sunflower">🌻</span>
+          <h1>Little Sponges</h1>
+        </div>
+        <div class="ex-score">⭐ 3/6</div>
+      </div>
+
+      <!-- Subtitle Bar (Speakology-style, top-left) -->
+      <div class="ex-subtitle-bar">
+        👩‍🏫 ¡Mira! ¿Qué animal es?
+      </div>
+
+      <!-- Teacher Avatar (top-right) -->
+      <div class="ex-teacher-avatar">
+        <svg class="avatar-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="#FFF9EC"/>
+          <circle cx="50" cy="40" r="22" fill="#8B6914"/>
+          <circle cx="50" cy="42" r="18" fill="#FFDAB9"/>
+          <circle cx="42" cy="38" r="3" fill="#333"/>
+          <circle cx="58" cy="38" r="3" fill="#333"/>
+          <path d="M 42 48 Q 50 54 58 48" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M 28 30 Q 50 10 72 30" fill="#8B6914"/>
+          <rect x="30" y="58" rx="10" width="40" height="25" fill="#F7AD00"/>
+        </svg>
+      </div>
+
+      <!-- Image Area -->
+      <div class="ex-image-area">
+        <div class="ex-image-card">
+          <img src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=400" alt="Horse" crossorigin>
+        </div>
+
+        <!-- Frog Character -->
+        <div class="frog-overlay">
+          <div class="frog-bubble">🎉 Three in a row!<br>¡Tres seguidos!</div>
+          <div class="frog-emoji">🐸</div>
+        </div>
+      </div>
+
+      <!-- Question Area -->
+      <div class="ex-question-area">
+        <div class="ex-question">What animal is this?</div>
+        <div class="ex-question-es">¿Qué animal es?</div>
+        <div class="ex-options">
+          <div class="ex-option">🐄 la vaca</div>
+          <div class="ex-option">🐔 el pollo</div>
+          <div class="ex-option correct">🐴 el caballo ✓</div>
+          <div class="ex-option">🐷 el cerdo</div>
+        </div>
+        <div class="ex-progress">
+          <div class="ex-dot done"></div>
+          <div class="ex-dot done"></div>
+          <div class="ex-dot done"></div>
+          <div class="ex-dot current"></div>
+          <div class="ex-dot upcoming"></div>
+          <div class="ex-dot upcoming"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: Complete Screen -->
+<div>
+  <div style="text-align:center;padding:10px;font-weight:700;color:#555;font-size:14px;">③ COMPLETE SCREEN</div>
+  <div class="phone-frame">
+    <div class="screen complete-screen">
+      <div class="complete-trophy">🏆</div>
+      <div class="complete-title">¡Felicidades!</div>
+      <div class="complete-subtitle">Congratulations!</div>
+      <div class="complete-stats">
+        <div class="stat-row">
+          <span class="stat-label">⭐ Score</span>
+          <span class="stat-value">6 / 6</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">🔥 Best Streak</span>
+          <span class="stat-value">6 in a row!</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">🐸 Frog Visits</span>
+          <span class="stat-value">2 times</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">📚 Words Learned</span>
+          <span class="stat-value">6 animals</span>
+        </div>
+      </div>
+      <div class="complete-btn">🔄 Play Again!</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+</body>
+</html>

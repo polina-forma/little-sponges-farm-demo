@@ -1,17 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles for Little Sponges Spanish Tutor */
-
-/* Base styles */
+/* ─── Base Styles ─── */
 body {
   font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
 }
 
-/* Ensure touch-friendly sizing on mobile */
+/* ─── Brand Color Variables ─── */
+:root {
+  --ls-gold: #F7AD00;
+  --ls-gold-light: #FFC940;
+  --ls-teal: #05544B;
+  --ls-teal-light: #0A7B6B;
+  --ls-cyan: #5BC0DE;
+  --ls-cyan-dark: #3AAFCF;
+  --ls-cream: #FFF9EC;
+  --ls-gray: #728188;
+}
+
+/* ─── Touch-friendly on mobile ─── */
 @media (max-width: 768px) {
   button {
     min-height: 44px;
@@ -19,64 +33,59 @@ body {
   }
 }
 
-/* Custom animations */
+/* ─── Custom Animations ─── */
 @keyframes bounce-gentle {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
-
 .animate-bounce-gentle {
   animation: bounce-gentle 2s ease-in-out infinite;
 }
 
-/* Recording pulse animation */
 @keyframes pulse-ring {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.5); opacity: 0; }
 }
-
 .animate-pulse-ring {
   animation: pulse-ring 1.5s ease-out infinite;
 }
 
-/* Safe area padding for mobile */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* ─── Safe area for mobile ─── */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 16px);
 }
 
-/* Smooth scrolling for chat */
-.scroll-smooth {
-  scroll-behavior: smooth;
-}
-
-/* Hide scrollbar but keep functionality */
+/* ─── Scrollbar ─── */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
-/* Focus styles for accessibility */
+/* ─── Focus styles (accessibility) ─── */
 button:focus-visible,
 [role="button"]:focus-visible {
-  outline: 3px solid #facc15;
+  outline: 3px solid var(--ls-gold);
   outline-offset: 2px;
 }
 
-/* Ensure emojis render consistently */
-.emoji {
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+/* ─── Subtitle text styling ─── */
+.subtitle-text {
+  color: var(--ls-cyan);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15);
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.4;
 }
