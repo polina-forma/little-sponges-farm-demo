@@ -120,20 +120,37 @@ Respond in JSON: {"correct": boolean, "feedback": "your message", "giveAnswer": 
   }
 });
 
-// === TEXT-TO-SPEECH ===
+// === TEXT-TO-SPEECH (ElevenLabs fallback) ===
 app.post('/api/speak', async (req, res) => {
   try {
-    const { text, voice = 'echo' } = req.body;
+    const { text } = req.body;
+    const voiceId = '87n4zM8Wuy87vFILuKvE'; // Ziggy
 
-    const mp3 = await openai.audio.speech.create({
-      model: 'tts-1',            // Standard model — much faster response time
-      voice: voice,              // echo = friendly male voice (frog character)
-      input: text,
-      speed: 0.82,               // slower for young ESL learners
-      response_format: 'mp3',
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': process.env.ELEVENLABS_API_KEY,
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.6,
+          similarity_boost: 0.85,
+          style: 0.4,
+          use_speaker_boost: true,
+        },
+      }),
     });
 
-    const buffer = Buffer.from(await mp3.arrayBuffer());
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`ElevenLabs HTTP ${response.status}: ${err}`);
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
     res.set({
       'Content-Type': 'audio/mpeg',
       'Content-Length': buffer.length,

@@ -1,102 +1,105 @@
 /**
  * Pre-generate all audio files for the Little Sponges ESL demo.
- * Uses OpenAI TTS-1 with 'echo' voice (male, frog character).
+ * Uses ElevenLabs TTS with Ziggy voice (young, animated, cartoonish male).
  * Outputs .mp3 files to public/audio/
  *
  * Run: node generate-audio.js
  */
-import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 
 dotenv.config();
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const AUDIO_DIR = path.join(process.cwd(), 'public', 'audio');
 
-// All animal words used in the demo
+// ElevenLabs config
+const VOICE_ID = '87n4zM8Wuy87vFILuKvE'; // Ziggy — young, animated male
+const MODEL_ID = 'eleven_multilingual_v2';
+const API_KEY = process.env.ELEVENLABS_API_KEY;
+
+// Fixed 5 animals for the demo
 const ANIMALS = [
-  { id: 'turtle', word: 'turtle', plural: false },
-  { id: 'duck', word: 'duck', plural: false },
-  { id: 'turkey', word: 'turkey', plural: false },
-  { id: 'chicken', word: 'chicken', plural: false },
-  { id: 'geese', word: 'geese', plural: true },
-  { id: 'cow', word: 'cow', plural: false },
-  { id: 'horse', word: 'horse', plural: false },
-  { id: 'sheep', word: 'sheep', plural: false },
-  { id: 'pig', word: 'pig', plural: false },
-  { id: 'cat', word: 'cat', plural: false },
-  { id: 'rabbits', word: 'rabbits', plural: true },
-  { id: 'dogs', word: 'dogs', plural: true },
-  { id: 'bees', word: 'bees', plural: true },
-  { id: 'grey-mouse', word: 'mouse', plural: false },
-  { id: 'brown-horse', word: 'horse', plural: false },
+  { id: 'horse', word: 'horse' },
+  { id: 'cow', word: 'cow' },
+  { id: 'chicken', word: 'chicken' },
+  { id: 'sheep', word: 'sheep' },
+  { id: 'pig', word: 'pig' },
 ];
 
-// Generic intro phrases (not per-animal)
-const INTRO_PHRASES = [
-  { file: 'intro-singular-1', text: 'What is this animal? Can you tell me?' },
-  { file: 'intro-singular-2', text: 'Ooh, look at this! What animal do you see?' },
-  { file: 'intro-singular-3', text: 'Hey, who is this? Do you know?' },
-  { file: 'intro-singular-4', text: 'Wow! What animal is this? Tell me!' },
-  { file: 'intro-singular-5', text: 'Look at this picture! What is it?' },
-  { file: 'intro-singular-6', text: 'What do we have here? What animal is this?' },
-  { file: 'intro-plural-1', text: 'What are these animals? Can you tell me?' },
-  { file: 'intro-plural-2', text: 'Ooh, look! What animals do you see?' },
-  { file: 'intro-plural-3', text: 'Hey, who are these? Do you know?' },
-  { file: 'intro-plural-4', text: 'Wow! What animals are these? Tell me!' },
-  { file: 'intro-plural-5', text: 'Look at this picture! What are they?' },
-  { file: 'intro-plural-6', text: 'What do we have here? What animals are these?' },
-];
+// All phrases to generate
+function getAllPhrases() {
+  const phrases = [];
 
-// Per-animal phrases
-function getAnimalPhrases(animal) {
-  const { id, word, plural } = animal;
-  const article = plural ? '' : 'a ';
-  const thisIs = plural ? `These are ${word}` : `This is ${article}${word}`;
+  // Opening greeting
+  phrases.push({ file: 'greeting', text: "Hello! Let's look at the pictures!" });
 
-  return [
-    // Correct — 3 varied celebrations per word
-    { file: `${id}-correct-1`, text: `Yes! Great job! You said ${word} perfectly!` },
-    { file: `${id}-correct-2`, text: `Awesome! That's right, it's ${article}${word}! You're so smart!` },
-    { file: `${id}-correct-3`, text: `Wow, you got it! ${word}! Amazing!` },
+  // Universal intro (same for every card)
+  phrases.push({ file: 'what-is-this', text: 'What is this?' });
 
-    // Reveal (attempt 1 wrong → show the word)
-    { file: `${id}-reveal`, text: `${thisIs}. Repeat after me: ${word}!` },
+  // Per-animal phrases
+  for (const { id, word } of ANIMALS) {
+    // Correct
+    phrases.push({ file: `${id}-correct`, text: `Yes! This is a ${word}!` });
 
-    // Encourage (attempt 2 wrong → one more try)
-    { file: `${id}-encourage`, text: `Almost! Say it with me: ${word}!` },
+    // Reveal (attempt 1 wrong)
+    phrases.push({ file: `${id}-reveal`, text: `This is a ${word}. Can you say ${word}?` });
 
-    // Skip (attempt 3 → move on)
-    { file: `${id}-skip`, text: `Good try! ${thisIs}. Let's try another one!` },
-  ];
+    // Encourage (attempt 2 wrong)
+    phrases.push({ file: `${id}-encourage`, text: `Say it with me: ${word}!` });
+
+    // Skip (attempt 3 — move on)
+    phrases.push({ file: `${id}-skip`, text: `This is a ${word}. Let's try another one!` });
+  }
+
+  // Horse bonus color question
+  phrases.push({ file: 'horse-color-ask', text: 'What color is the horse?' });
+  phrases.push({ file: 'horse-color-correct', text: "Yes! It's a brown horse. Good job!" });
+  phrases.push({ file: 'horse-color-reveal', text: 'The horse is brown. Can you say brown?' });
+  phrases.push({ file: 'horse-color-encourage', text: 'Say it with me: brown!' });
+  phrases.push({ file: 'horse-color-skip', text: "The horse is brown. Let's try another one!" });
+
+  // Completion screen
+  phrases.push({ file: 'complete-great', text: "Great job! You did amazing today!" });
+
+  return phrases;
 }
-
-// Completion screen
-const COMPLETION_PHRASES = [
-  { file: 'complete-great', text: "Great job! You did amazing today! I'm so proud of you!" },
-];
 
 async function generateAudio(filename, text) {
   const outPath = path.join(AUDIO_DIR, `${filename}.mp3`);
 
   // Skip if already exists
   if (fs.existsSync(outPath)) {
-    console.log(`  ✓ ${filename}.mp3 (exists)`);
+    console.log(`  ✓ ${filename}.mp3 (exists, skipping)`);
     return;
   }
 
   try {
-    const mp3 = await openai.audio.speech.create({
-      model: 'tts-1',
-      voice: 'echo',
-      input: text,
-      speed: 0.82,
-      response_format: 'mp3',
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': API_KEY,
+      },
+      body: JSON.stringify({
+        text,
+        model_id: MODEL_ID,
+        voice_settings: {
+          stability: 0.6,
+          similarity_boost: 0.85,
+          style: 0.4,
+          use_speaker_boost: true,
+        },
+      }),
     });
 
-    const buffer = Buffer.from(await mp3.arrayBuffer());
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`HTTP ${response.status}: ${err}`);
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
     fs.writeFileSync(outPath, buffer);
     console.log(`  ✓ ${filename}.mp3 (${buffer.length} bytes)`);
   } catch (err) {
@@ -105,33 +108,27 @@ async function generateAudio(filename, text) {
 }
 
 async function main() {
-  console.log('\n🐸 Little Sponges Audio Generator\n');
+  console.log('\n🐸 Little Sponges Audio Generator (ElevenLabs)\n');
+  console.log(`Voice: Ziggy (${VOICE_ID})`);
+  console.log(`Model: ${MODEL_ID}`);
   console.log(`Output: ${AUDIO_DIR}\n`);
 
-  // Collect all phrases
-  const allPhrases = [];
-
-  // Intros
-  allPhrases.push(...INTRO_PHRASES);
-
-  // Per-animal
-  const uniqueWords = new Set();
-  for (const animal of ANIMALS) {
-    // Skip duplicate words (horse appears twice)
-    const key = animal.id;
-    if (key === 'brown-horse') continue; // same word as 'horse', reuse audio
-    allPhrases.push(...getAnimalPhrases(animal));
+  if (!API_KEY) {
+    console.error('❌ Missing ELEVENLABS_API_KEY in .env file');
+    console.error('   Add it: echo "ELEVENLABS_API_KEY=your_key_here" >> .env');
+    process.exit(1);
   }
 
-  // Completion
-  allPhrases.push(...COMPLETION_PHRASES);
+  if (!fs.existsSync(AUDIO_DIR)) {
+    fs.mkdirSync(AUDIO_DIR, { recursive: true });
+  }
 
+  const allPhrases = getAllPhrases();
   console.log(`Generating ${allPhrases.length} audio files...\n`);
 
-  // Generate in batches of 5 to avoid rate limits
-  for (let i = 0; i < allPhrases.length; i += 5) {
-    const batch = allPhrases.slice(i, i + 5);
-    await Promise.all(batch.map(p => generateAudio(p.file, p.text)));
+  // Generate one at a time to stay within ElevenLabs rate limits
+  for (const p of allPhrases) {
+    await generateAudio(p.file, p.text);
   }
 
   console.log(`\n✅ Done! ${allPhrases.length} files in ${AUDIO_DIR}\n`);

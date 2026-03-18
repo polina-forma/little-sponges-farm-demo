@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
  * DemoApp - Little Sponges English ESL Tutor (Farm Adventure - Unit 1)
  *
  * Brand: Little Sponges colors + game-style UI
- * Voice: Pre-recorded OpenAI TTS-1 echo (male frog) with API fallback
+ * Voice: Pre-recorded ElevenLabs Ziggy (young animated male) with API fallback
  * Evaluation: Local fuzzy word matching (instant, no API lag)
  * STT: Web Speech API
  */
@@ -40,49 +40,13 @@ const BRAND = {
 // ─── Logo path ───
 const LOGO_SRC = '/images/little-sponges-logo.png';
 
-// ─── Animal Cards Only (English ESL — proof of concept) ───
+// ─── Fixed 5 cards for demo (no shuffle) ───
 const EXERCISES = [
-  { id: 'turtle', image: '/images/unit1/Turtle.png', word: 'turtle', plural: false },
-  { id: 'duck', image: '/images/unit1/Duck.png', word: 'duck', plural: false },
-  { id: 'turkey', image: '/images/unit1/Turkey.png', word: 'turkey', plural: false },
-  { id: 'chicken', image: '/images/unit1/Chicken.png', word: 'chicken', plural: false },
-  { id: 'geese', image: '/images/unit1/Geese.png', word: 'geese', plural: true },
-  { id: 'cow', image: '/images/unit1/Cow.png', word: 'cow', plural: false },
-  { id: 'horse', image: '/images/unit1/Horse.png', word: 'horse', plural: false },
-  { id: 'sheep', image: '/images/unit1/Sheep.png', word: 'sheep', plural: false },
-  { id: 'pig', image: '/images/unit1/Pig.png', word: 'pig', plural: false },
-  { id: 'cat', image: '/images/unit1/Cat.png', word: 'cat', plural: false },
-  { id: 'rabbits', image: '/images/unit1/Rabbits.png', word: 'rabbits', plural: true },
-  { id: 'dogs', image: '/images/unit1/Dogs.png', word: 'dogs', plural: true },
-  { id: 'bees', image: '/images/unit1/Bees.png', word: 'bees', plural: true },
-  { id: 'grey-mouse', image: '/images/unit1/Grey Mouse.png', word: 'mouse', plural: false },
-  { id: 'brown-horse', image: '/images/unit1/Brown Horse.png', word: 'horse', plural: false },
-];
-
-// ─── Demo config ───
-const DEMO_COUNT = 5;
-
-function shuffleAndPick(arr, count) {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
-}
-
-// ─── Intro prompt templates (text shown, audio pre-recorded) ───
-const INTRO_SINGULAR = [
-  'What is this animal? Can you tell me?',
-  'Ooh, look at this! What animal do you see?',
-  'Hey, who is this? Do you know?',
-  'Wow! What animal is this? Tell me!',
-  'Look at this picture! What is it?',
-  'What do we have here? What animal is this?',
-];
-const INTRO_PLURAL = [
-  'What are these animals? Can you tell me?',
-  'Ooh, look! What animals do you see?',
-  'Hey, who are these? Do you know?',
-  'Wow! What animals are these? Tell me!',
-  'Look at this picture! What are they?',
-  'What do we have here? What animals are these?',
+  { id: 'horse', image: '/images/unit1/Brown Horse.png', word: 'horse' },
+  { id: 'cow', image: '/images/unit1/Cow.png', word: 'cow' },
+  { id: 'chicken', image: '/images/unit1/Chicken.png', word: 'chicken' },
+  { id: 'sheep', image: '/images/unit1/Sheep.png', word: 'sheep' },
+  { id: 'pig', image: '/images/unit1/Pig.png', word: 'pig' },
 ];
 
 // ════════════════════════════════════════════════════════
@@ -152,7 +116,7 @@ async function playAudio(audioPath, text, apiBase) {
           const res = await fetch(`${apiBase}/api/speak`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, voice: 'echo' }),
+            body: JSON.stringify({ text }),
           });
           if (!res.ok) { resolve(); return; }
           const blob = await res.blob();
@@ -284,18 +248,18 @@ function FarmBackground() {
         <ellipse cx="22" cy="4" rx="18" ry="7" fill="#909090" />
       </g>
 
-      {/* Fence */}
+      {/* Fence (lowered so frog stands on ground above it) */}
       <g opacity="0.85">
         {[100, 220, 340, 460, 580, 860, 980, 1100, 1220, 1340].map((x) => (
           <g key={x}>
-            <rect x={x} y="570" width="12" height="70" rx="2" fill="#8B6914" />
-            <ellipse cx={x + 6} cy="570" rx="8" ry="4" fill="#A07A1A" />
+            <rect x={x} y="610" width="12" height="70" rx="2" fill="#8B6914" />
+            <ellipse cx={x + 6} cy="610" rx="8" ry="4" fill="#A07A1A" />
           </g>
         ))}
-        <rect x="90" y="585" width="480" height="8" rx="3" fill="#A07A1A" />
-        <rect x="90" y="610" width="480" height="8" rx="3" fill="#A07A1A" />
-        <rect x="850" y="585" width="510" height="8" rx="3" fill="#A07A1A" />
-        <rect x="850" y="610" width="510" height="8" rx="3" fill="#A07A1A" />
+        <rect x="90" y="625" width="480" height="8" rx="3" fill="#A07A1A" />
+        <rect x="90" y="650" width="480" height="8" rx="3" fill="#A07A1A" />
+        <rect x="850" y="625" width="510" height="8" rx="3" fill="#A07A1A" />
+        <rect x="850" y="650" width="510" height="8" rx="3" fill="#A07A1A" />
       </g>
 
       {/* Trees */}
@@ -409,19 +373,20 @@ function FrogAvatar({ size = 360, state = 'idle' }) {
       const imageData = ctx.getImageData(0, 0, w, h);
       const d = imageData.data;
 
-      // Magenta chroma key: aggressively remove any pixel with magenta tones
+      // Blue chroma key — frog has no blue, so this is clean and simple
+      // Blue background: low R, low G, high B
       for (let i = 0; i < d.length; i += 4) {
         const r = d[i], g = d[i + 1], b = d[i + 2];
-        // Any pixel where red and blue both exceed green = magenta-ish
-        const rb = (r + b) / 2;
-        const magentaness = rb - g;
-        if (r > 60 && b > 60 && magentaness > 30) {
-          if (magentaness > 60) {
-            d[i + 3] = 0; // fully transparent
-          } else {
-            // Edge transition
-            d[i + 3] = Math.round((1 - (magentaness - 30) / 30) * 255);
-          }
+        const blueness = b - Math.max(r, g);
+
+        // Strong blue: nuke fully
+        if (b > 100 && blueness > 50) {
+          d[i + 3] = 0;
+        }
+        // Edge blue: smooth fade
+        else if (b > 60 && blueness > 20) {
+          const fade = Math.min(1, (blueness - 20) / 40);
+          d[i + 3] = Math.round((1 - fade) * 255);
         }
       }
 
@@ -566,7 +531,7 @@ function useAudioPlayer() {
           const res = await fetch(`${API_BASE}/api/speak`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: fallbackText, voice: 'echo' }),
+            body: JSON.stringify({ text: fallbackText, voice: 'fable' }),
           });
           if (res.ok) {
             const blob = await res.blob();
@@ -645,52 +610,59 @@ function useSTT() {
 // ─── MAIN APP ─────────────────────────────────────
 // ═══════════════════════════════════════════════════
 export default function DemoApp() {
-  const [deck, setDeck] = useState(() => shuffleAndPick(EXERCISES, DEMO_COUNT));
+  const [deck, setDeck] = useState(EXERCISES);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [phase, setPhase] = useState('start'); // start | intro | respond | feedback | giveAnswer | celebrate | complete
   const [feedbackText, setFeedbackText] = useState('');
   const [correctIds, setCorrectIds] = useState(new Set());
   const [attemptNumber, setAttemptNumber] = useState(1);
 
+  // Horse bonus color question
+  const [bonusActive, setBonusActive] = useState(false);
+  const [bonusAttempt, setBonusAttempt] = useState(1);
+
   const exerciseIndexRef = useRef(exerciseIndex);
   const advanceTimerRef = useRef(null);
   const gameOverRef = useRef(false);
   const processingRef = useRef(false);
+  const completionPlayedRef = useRef(false);
 
   useEffect(() => { exerciseIndexRef.current = exerciseIndex; }, [exerciseIndex]);
 
   const score = correctIds.size;
 
+  // Play completion audio when reaching the complete screen
+  // (must be declared here, before any early returns, to satisfy React hooks rules)
   const { speak, stop: stopAudio, speaking } = useAudioPlayer();
   const { startListening, stopListening, listening, transcript, alternatives, transcriptId } = useSTT();
 
+  useEffect(() => {
+    if (phase === 'complete' && !completionPlayedRef.current) {
+      completionPlayedRef.current = true;
+      speak('/audio/complete-great.mp3', 'Great job! You did amazing today!');
+    }
+  }, [phase, speak]);
+
   const exercise = deck[exerciseIndex] || deck[0];
 
-  // ─── Pick random intro audio file ───
-  const playIntro = useCallback(() => {
-    const isSingular = !exercise.plural;
-    const type = isSingular ? 'singular' : 'plural';
-    const templates = isSingular ? INTRO_SINGULAR : INTRO_PLURAL;
-    const idx = Math.floor(Math.random() * templates.length) + 1;
-    const audioPath = `/audio/intro-${type}-${idx}.mp3`;
-    const fallbackText = templates[idx - 1];
-    speak(audioPath, fallbackText);
-  }, [exercise, speak]);
-
-  // ─── Start exercise ───
+  // ─── Start exercise — just "What is this?" ───
   const startExercise = useCallback(() => {
     if (gameOverRef.current) return;
     setFeedbackText('');
     setAttemptNumber(1);
     processingRef.current = false;
     setPhase('respond');
-    playIntro();
-  }, [playIntro]);
+    speak('/audio/what-is-this.mp3', 'What is this?');
+  }, [speak]);
 
-  // Handle "start" button tap — satisfies browser autoplay policy
+  // Handle "start" button tap — plays greeting then starts first card
   const handleStart = useCallback(() => {
-    setPhase('intro');
-  }, []);
+    // Play opening greeting, then transition to first card
+    speak('/audio/greeting.mp3', 'Hello! Let\'s look at the pictures!');
+    setTimeout(() => {
+      setPhase('intro');
+    }, 2500);
+  }, [speak]);
 
   // Auto-start on mount or exercise change
   useEffect(() => {
@@ -722,27 +694,74 @@ export default function DemoApp() {
     if (processingRef.current) return;
     processingRef.current = true;
 
+    // ── BONUS: Horse color question ──
+    if (bonusActive) {
+      const isCorrect = fuzzyMatch(alternatives, 'brown');
+
+      if (isCorrect) {
+        const msg = "Yes! It's a brown horse. Good job!";
+        setFeedbackText(msg);
+        setPhase('celebrate');
+        speak('/audio/horse-color-correct.mp3', msg);
+        setBonusActive(false);
+        advanceToNext(2500);
+      } else if (bonusAttempt >= MAX_ATTEMPTS) {
+        const msg = "The horse is brown. Let's try another one!";
+        setFeedbackText(msg);
+        setPhase('giveAnswer');
+        speak('/audio/horse-color-skip.mp3', msg);
+        setBonusActive(false);
+        advanceToNext(3500);
+      } else if (bonusAttempt === 1) {
+        const msg = 'The horse is brown. Can you say brown?';
+        setFeedbackText(msg);
+        setBonusAttempt(2);
+        setPhase('respond');
+        speak('/audio/horse-color-reveal.mp3', msg);
+        processingRef.current = false;
+      } else {
+        const msg = 'Say it with me: brown!';
+        setFeedbackText(msg);
+        setBonusAttempt((a) => a + 1);
+        setPhase('respond');
+        speak('/audio/horse-color-encourage.mp3', msg);
+        processingRef.current = false;
+      }
+      return;
+    }
+
+    // ── NORMAL: Animal identification ──
     const audioId = getAudioId(exercise.id);
     const isCorrect = fuzzyMatch(alternatives, exercise.word);
 
     if (isCorrect) {
-      // Pick random correct celebration (1-3)
-      const variant = Math.floor(Math.random() * 3) + 1;
-      const audioPath = `/audio/${audioId}-correct-${variant}.mp3`;
-      const correctTexts = [
-        `Yes! Great job! You said ${exercise.word} perfectly!`,
-        `Awesome! That's right, it's ${exercise.plural ? '' : 'a '}${exercise.word}! You're so smart!`,
-        `Wow, you got it! ${exercise.word}! Amazing!`,
-      ];
-      setFeedbackText(correctTexts[variant - 1]);
+      // Simple correct response
+      const audioPath = `/audio/${audioId}-correct.mp3`;
+      const msg = `Yes! This is a ${exercise.word}!`;
+      setFeedbackText(msg);
       setCorrectIds((prev) => new Set([...prev, exercise.id]));
       setPhase('celebrate');
-      speak(audioPath, correctTexts[variant - 1]);
-      advanceToNext(2500);
+      speak(audioPath, msg);
+
+      // If horse was correct, trigger bonus color question instead of advancing
+      if (exercise.id === 'horse') {
+        setTimeout(() => {
+          if (gameOverRef.current) return;
+          setBonusActive(true);
+          setBonusAttempt(1);
+          setPhase('respond');
+          const bonusMsg = 'What color is the horse?';
+          setFeedbackText(bonusMsg);
+          speak('/audio/horse-color-ask.mp3', bonusMsg);
+          processingRef.current = false;
+        }, 2500);
+      } else {
+        advanceToNext(2500);
+      }
     } else if (attemptNumber >= MAX_ATTEMPTS) {
-      // Auto-skip
+      // Auto-skip (no bonus if they couldn't identify the horse)
       const audioPath = `/audio/${audioId}-skip.mp3`;
-      const msg = `Good try! This is ${exercise.plural ? '' : 'a '}${exercise.word}. Let's try another one!`;
+      const msg = `This is a ${exercise.word}. Let's try another one!`;
       setFeedbackText(msg);
       setPhase('giveAnswer');
       speak(audioPath, msg);
@@ -750,7 +769,7 @@ export default function DemoApp() {
     } else if (attemptNumber === 1) {
       // First wrong: reveal word
       const audioPath = `/audio/${audioId}-reveal.mp3`;
-      const msg = `This is ${exercise.plural ? '' : 'a '}${exercise.word}. Repeat after me: ${exercise.word}!`;
+      const msg = `This is a ${exercise.word}. Can you say ${exercise.word}?`;
       setFeedbackText(msg);
       setAttemptNumber(2);
       setPhase('respond');
@@ -759,7 +778,7 @@ export default function DemoApp() {
     } else {
       // Second wrong: encourage
       const audioPath = `/audio/${audioId}-encourage.mp3`;
-      const msg = `Almost! Say it with me: ${exercise.word}!`;
+      const msg = `Say it with me: ${exercise.word}!`;
       setFeedbackText(msg);
       setAttemptNumber((a) => a + 1);
       setPhase('respond');
@@ -783,12 +802,15 @@ export default function DemoApp() {
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
     gameOverRef.current = false;
     processingRef.current = false;
-    setDeck(shuffleAndPick(EXERCISES, DEMO_COUNT));
+    completionPlayedRef.current = false;
+    setDeck(EXERCISES);
     setExerciseIndex(0);
     setCorrectIds(new Set());
     setPhase('intro');
     setFeedbackText('');
     setAttemptNumber(1);
+    setBonusActive(false);
+    setBonusAttempt(1);
   };
 
   // ════════════════════════════════════════════════════
@@ -818,7 +840,7 @@ export default function DemoApp() {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 24,
+            gap: 16,
             zIndex: 1,
           }}
         >
@@ -851,6 +873,7 @@ export default function DemoApp() {
   // ════════════════════════════════════════════════════
   // ─── COMPLETION SCREEN ─────────────────────────────
   // ════════════════════════════════════════════════════
+
   if (phase === 'complete') {
     return (
       <div style={{
@@ -1014,7 +1037,7 @@ export default function DemoApp() {
       {/* Frog — positioned to the right, vertically aligned with card center */}
       <div style={{
         position: 'absolute',
-        top: 'calc(50% - 40px)',
+        top: 'calc(50% - 65px)',
         left: 'calc(50% + 260px)',
         transform: 'translateY(-50%)',
         display: 'flex',
