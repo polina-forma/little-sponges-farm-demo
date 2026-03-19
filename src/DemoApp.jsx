@@ -627,7 +627,6 @@ export default function DemoApp() {
   const bonusActiveRef = useRef(bonusActive);
   const advanceTimerRef = useRef(null);
   const gameOverRef = useRef(false);
-  const processingRef = useRef(false);
   const completionPlayedRef = useRef(false);
   const lastProcessedTranscriptId = useRef(0);
 
@@ -662,7 +661,6 @@ export default function DemoApp() {
     bonusActiveRef.current = false;
     setBonusAttempt(1);
     bonusAttemptRef.current = 1;
-    processingRef.current = false;
     setPhase('respond');
     speak('/audio/what-is-this.mp3', 'What is this?');
   }, [speak]);
@@ -701,54 +699,50 @@ export default function DemoApp() {
   }, [deck.length]);
 
   // ─── Handle speech transcript — LOCAL evaluation, PRE-RECORDED responses ───
+  // Only guard: lastProcessedTranscriptId prevents double-processing.
+  // No processingRef — it was getting stuck and causing the app to freeze.
+  // The mic button only shows during phase=respond, so transcripts only arrive
+  // when we're ready for them.
   useEffect(() => {
     if (!transcriptId || !transcript || gameOverRef.current) return;
-    // Guard against React strict mode double-firing and duplicate processing
     if (transcriptId <= lastProcessedTranscriptId.current) return;
-    if (processingRef.current) return;
     lastProcessedTranscriptId.current = transcriptId;
-    processingRef.current = true;
 
-    // ── BONUS: Horse color question ──
+    // Read current values from refs (always fresh, no stale closures)
     const curBonusActive = bonusActiveRef.current;
     const curBonusAttempt = bonusAttemptRef.current;
     const curAttempt = attemptNumberRef.current;
 
+    // ── BONUS: Horse color question ──
     if (curBonusActive) {
       const isCorrect = fuzzyMatch(alternatives, 'brown');
 
       if (isCorrect) {
-        const msg = "Yes! It's a brown horse. Good job!";
-        setFeedbackText(msg);
+        setFeedbackText("Yes! It's a brown horse. Good job!");
         setPhase('celebrate');
-        speak('/audio/horse-color-correct.mp3', msg);
+        speak('/audio/horse-color-correct.mp3', "Yes! It's a brown horse. Good job!");
         setBonusActive(false);
         bonusActiveRef.current = false;
         advanceToNext(2500);
       } else if (curBonusAttempt >= MAX_ATTEMPTS) {
-        const msg = "Let's try another one!";
-        setFeedbackText(msg);
+        setFeedbackText("Let's try another one!");
         setPhase('giveAnswer');
-        speak('/audio/horse-color-skip.mp3', msg);
+        speak('/audio/horse-color-skip.mp3', "Let's try another one!");
         setBonusActive(false);
         bonusActiveRef.current = false;
         advanceToNext(3500);
       } else if (curBonusAttempt === 1) {
-        const msg = 'No, please try again.';
-        setFeedbackText(msg);
+        setFeedbackText('No, please try again.');
         setBonusAttempt(2);
         bonusAttemptRef.current = 2;
         setPhase('respond');
-        speak('/audio/try-again.mp3', msg);
-        processingRef.current = false;
+        speak('/audio/try-again.mp3', 'No, please try again.');
       } else {
-        const msg = 'No, the horse is brown. Say it with me... brown!';
-        setFeedbackText(msg);
+        setFeedbackText('No, the horse is brown. Say it with me... brown!');
         setBonusAttempt(curBonusAttempt + 1);
         bonusAttemptRef.current = curBonusAttempt + 1;
         setPhase('respond');
-        speak('/audio/horse-color-reveal.mp3', msg);
-        processingRef.current = false;
+        speak('/audio/horse-color-reveal.mp3', 'No, the horse is brown. Say it with me... brown!');
       }
       return;
     }
@@ -758,7 +752,6 @@ export default function DemoApp() {
     const isCorrect = fuzzyMatch(alternatives, exercise.word);
 
     if (isCorrect) {
-      // Simple correct response
       const audioPath = `/audio/${audioId}-correct.mp3`;
       const msg = `Yes! This is a ${exercise.word}!`;
       setFeedbackText(msg);
@@ -775,35 +768,25 @@ export default function DemoApp() {
           setBonusAttempt(1);
           bonusAttemptRef.current = 1;
           setPhase('respond');
-          const bonusMsg = 'What color is the horse?';
-          setFeedbackText(bonusMsg);
-          speak('/audio/horse-color-ask.mp3', bonusMsg);
-          processingRef.current = false;
+          setFeedbackText('What color is the horse?');
+          speak('/audio/horse-color-ask.mp3', 'What color is the horse?');
         }, 2500);
       } else {
         advanceToNext(2500);
       }
     } else if (curAttempt >= MAX_ATTEMPTS) {
-      // Auto-skip (no bonus if they couldn't identify the horse)
-      const isLast = exerciseIndexRef.current >= deck.length - 1;
       const audioPath = `/audio/${audioId}-skip.mp3`;
-      const msg = "Let's try another one!";
-      setFeedbackText(msg);
+      setFeedbackText("Let's try another one!");
       setPhase('giveAnswer');
-      speak(audioPath, msg);
+      speak(audioPath, "Let's try another one!");
       advanceToNext(3500);
     } else if (curAttempt === 1) {
-      // First wrong: simple "try again"
-      const audioPath = `/audio/try-again.mp3`;
-      const msg = 'No, please try again.';
-      setFeedbackText(msg);
+      setFeedbackText('No, please try again.');
       setAttemptNumber(2);
       attemptNumberRef.current = 2;
       setPhase('respond');
-      speak(audioPath, msg);
-      processingRef.current = false;
+      speak('/audio/try-again.mp3', 'No, please try again.');
     } else {
-      // Second wrong: reveal word with pause for mic
       const audioPath = `/audio/${audioId}-reveal.mp3`;
       const msg = `No, this is a ${exercise.word}. Say it with me... ${exercise.word}!`;
       setFeedbackText(msg);
@@ -811,7 +794,6 @@ export default function DemoApp() {
       attemptNumberRef.current = curAttempt + 1;
       setPhase('respond');
       speak(audioPath, msg);
-      processingRef.current = false;
     }
   }, [transcriptId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -829,7 +811,6 @@ export default function DemoApp() {
   const handleRestart = () => {
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
     gameOverRef.current = false;
-    processingRef.current = false;
     completionPlayedRef.current = false;
     setDeck(EXERCISES);
     setExerciseIndex(0);
