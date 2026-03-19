@@ -657,6 +657,11 @@ export default function DemoApp() {
     if (gameOverRef.current) return;
     setFeedbackText('');
     setAttemptNumber(1);
+    attemptNumberRef.current = 1;
+    setBonusActive(false);
+    bonusActiveRef.current = false;
+    setBonusAttempt(1);
+    bonusAttemptRef.current = 1;
     processingRef.current = false;
     setPhase('respond');
     speak('/audio/what-is-this.mp3', 'What is this?');
