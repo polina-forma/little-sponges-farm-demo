@@ -626,6 +626,7 @@ export default function DemoApp() {
   const gameOverRef = useRef(false);
   const processingRef = useRef(false);
   const completionPlayedRef = useRef(false);
+  const lastProcessedTranscriptId = useRef(0);
 
   useEffect(() => { exerciseIndexRef.current = exerciseIndex; }, [exerciseIndex]);
 
@@ -691,7 +692,10 @@ export default function DemoApp() {
   // ─── Handle speech transcript — LOCAL evaluation, PRE-RECORDED responses ───
   useEffect(() => {
     if (!transcriptId || !transcript || gameOverRef.current) return;
+    // Guard against React strict mode double-firing and duplicate processing
+    if (transcriptId <= lastProcessedTranscriptId.current) return;
     if (processingRef.current) return;
+    lastProcessedTranscriptId.current = transcriptId;
     processingRef.current = true;
 
     // ── BONUS: Horse color question ──
@@ -811,6 +815,7 @@ export default function DemoApp() {
     setAttemptNumber(1);
     setBonusActive(false);
     setBonusAttempt(1);
+    lastProcessedTranscriptId.current = 0;
   };
 
   // ════════════════════════════════════════════════════
