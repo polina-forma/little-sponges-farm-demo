@@ -622,6 +622,9 @@ export default function DemoApp() {
   const [bonusAttempt, setBonusAttempt] = useState(1);
 
   const exerciseIndexRef = useRef(exerciseIndex);
+  const attemptNumberRef = useRef(attemptNumber);
+  const bonusAttemptRef = useRef(bonusAttempt);
+  const bonusActiveRef = useRef(bonusActive);
   const advanceTimerRef = useRef(null);
   const gameOverRef = useRef(false);
   const processingRef = useRef(false);
@@ -629,6 +632,9 @@ export default function DemoApp() {
   const lastProcessedTranscriptId = useRef(0);
 
   useEffect(() => { exerciseIndexRef.current = exerciseIndex; }, [exerciseIndex]);
+  useEffect(() => { attemptNumberRef.current = attemptNumber; }, [attemptNumber]);
+  useEffect(() => { bonusAttemptRef.current = bonusAttempt; }, [bonusAttempt]);
+  useEffect(() => { bonusActiveRef.current = bonusActive; }, [bonusActive]);
 
   const score = correctIds.size;
 
@@ -699,7 +705,11 @@ export default function DemoApp() {
     processingRef.current = true;
 
     // ── BONUS: Horse color question ──
-    if (bonusActive) {
+    const curBonusActive = bonusActiveRef.current;
+    const curBonusAttempt = bonusAttemptRef.current;
+    const curAttempt = attemptNumberRef.current;
+
+    if (curBonusActive) {
       const isCorrect = fuzzyMatch(alternatives, 'brown');
 
       if (isCorrect) {
@@ -708,25 +718,29 @@ export default function DemoApp() {
         setPhase('celebrate');
         speak('/audio/horse-color-correct.mp3', msg);
         setBonusActive(false);
+        bonusActiveRef.current = false;
         advanceToNext(2500);
-      } else if (bonusAttempt >= MAX_ATTEMPTS) {
+      } else if (curBonusAttempt >= MAX_ATTEMPTS) {
         const msg = "The horse is brown. Let's try another one!";
         setFeedbackText(msg);
         setPhase('giveAnswer');
         speak('/audio/horse-color-skip.mp3', msg);
         setBonusActive(false);
+        bonusActiveRef.current = false;
         advanceToNext(3500);
-      } else if (bonusAttempt === 1) {
+      } else if (curBonusAttempt === 1) {
         const msg = 'The horse is brown. Can you say brown?';
         setFeedbackText(msg);
         setBonusAttempt(2);
+        bonusAttemptRef.current = 2;
         setPhase('respond');
         speak('/audio/horse-color-reveal.mp3', msg);
         processingRef.current = false;
       } else {
         const msg = 'Say it with me: brown!';
         setFeedbackText(msg);
-        setBonusAttempt((a) => a + 1);
+        setBonusAttempt(curBonusAttempt + 1);
+        bonusAttemptRef.current = curBonusAttempt + 1;
         setPhase('respond');
         speak('/audio/horse-color-encourage.mp3', msg);
         processingRef.current = false;
@@ -752,7 +766,9 @@ export default function DemoApp() {
         setTimeout(() => {
           if (gameOverRef.current) return;
           setBonusActive(true);
+          bonusActiveRef.current = true;
           setBonusAttempt(1);
+          bonusAttemptRef.current = 1;
           setPhase('respond');
           const bonusMsg = 'What color is the horse?';
           setFeedbackText(bonusMsg);
@@ -762,20 +778,31 @@ export default function DemoApp() {
       } else {
         advanceToNext(2500);
       }
-    } else if (attemptNumber >= MAX_ATTEMPTS) {
+    } else if (curAttempt >= MAX_ATTEMPTS) {
       // Auto-skip (no bonus if they couldn't identify the horse)
-      const audioPath = `/audio/${audioId}-skip.mp3`;
-      const msg = `This is a ${exercise.word}. Let's try another one!`;
-      setFeedbackText(msg);
-      setPhase('giveAnswer');
-      speak(audioPath, msg);
+      const isLast = exerciseIndexRef.current >= deck.length - 1;
+      if (isLast) {
+        // Last card — just reveal the word, no "let's try another one"
+        const audioPath = `/audio/${audioId}-reveal.mp3`;
+        const msg = `This is a ${exercise.word}.`;
+        setFeedbackText(msg);
+        setPhase('giveAnswer');
+        speak(audioPath, msg);
+      } else {
+        const audioPath = `/audio/${audioId}-skip.mp3`;
+        const msg = `This is a ${exercise.word}. Let's try another one!`;
+        setFeedbackText(msg);
+        setPhase('giveAnswer');
+        speak(audioPath, msg);
+      }
       advanceToNext(3500);
-    } else if (attemptNumber === 1) {
+    } else if (curAttempt === 1) {
       // First wrong: reveal word
       const audioPath = `/audio/${audioId}-reveal.mp3`;
       const msg = `This is a ${exercise.word}. Can you say ${exercise.word}?`;
       setFeedbackText(msg);
       setAttemptNumber(2);
+      attemptNumberRef.current = 2;
       setPhase('respond');
       speak(audioPath, msg);
       processingRef.current = false;
@@ -784,7 +811,8 @@ export default function DemoApp() {
       const audioPath = `/audio/${audioId}-encourage.mp3`;
       const msg = `Say it with me: ${exercise.word}!`;
       setFeedbackText(msg);
-      setAttemptNumber((a) => a + 1);
+      setAttemptNumber(curAttempt + 1);
+      attemptNumberRef.current = curAttempt + 1;
       setPhase('respond');
       speak(audioPath, msg);
       processingRef.current = false;
@@ -1034,7 +1062,7 @@ export default function DemoApp() {
             <motion.div initial={{ scale: 0 }} animate={{ scale: [0, 1.3, 1] }} style={{ fontSize: 80 }}>🎉</motion.div>
           )}
           {phase === 'giveAnswer' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ fontSize: 50 }}>💪</motion.div>
+            <div style={{ minHeight: 50 }} />
           )}
         </div>
       </div>
