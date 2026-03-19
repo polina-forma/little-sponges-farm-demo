@@ -60,6 +60,7 @@ function getAllPhrases() {
 
   // Completion screen
   phrases.push({ file: 'complete-great', text: "Great job! You did amazing today!" });
+  phrases.push({ file: 'complete-good-try', text: "Good try! You did amazing today!" });
 
   return phrases;
 }

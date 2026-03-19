@@ -677,7 +677,11 @@ export default function DemoApp() {
   useEffect(() => {
     if (phase === 'complete' && !completionPlayedRef.current) {
       completionPlayedRef.current = true;
-      speak('/audio/complete-great.mp3', 'Great job! You did amazing today!');
+      if (correctIds.size >= 4) {
+        speak('/audio/complete-great.mp3', 'Great job! You did amazing today!');
+      } else {
+        speak('/audio/complete-good-try.mp3', 'Good try! You did amazing today!');
+      }
     }
   }, [phase, speak]);
 
