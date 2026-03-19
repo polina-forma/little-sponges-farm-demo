@@ -726,7 +726,7 @@ export default function DemoApp() {
         bonusActiveRef.current = false;
         advanceToNext(2500);
       } else if (curBonusAttempt >= MAX_ATTEMPTS) {
-        const msg = "The horse is brown. Let's try another one!";
+        const msg = "Let's try another one!";
         setFeedbackText(msg);
         setPhase('giveAnswer');
         speak('/audio/horse-color-skip.mp3', msg);
@@ -734,20 +734,20 @@ export default function DemoApp() {
         bonusActiveRef.current = false;
         advanceToNext(3500);
       } else if (curBonusAttempt === 1) {
-        const msg = 'The horse is brown. Can you say brown?';
+        const msg = 'No, please try again.';
         setFeedbackText(msg);
         setBonusAttempt(2);
         bonusAttemptRef.current = 2;
         setPhase('respond');
-        speak('/audio/horse-color-reveal.mp3', msg);
+        speak('/audio/try-again.mp3', msg);
         processingRef.current = false;
       } else {
-        const msg = 'Say it with me: brown!';
+        const msg = 'No, the horse is brown. Say it with me... brown!';
         setFeedbackText(msg);
         setBonusAttempt(curBonusAttempt + 1);
         bonusAttemptRef.current = curBonusAttempt + 1;
         setPhase('respond');
-        speak('/audio/horse-color-encourage.mp3', msg);
+        speak('/audio/horse-color-reveal.mp3', msg);
         processingRef.current = false;
       }
       return;
@@ -786,25 +786,16 @@ export default function DemoApp() {
     } else if (curAttempt >= MAX_ATTEMPTS) {
       // Auto-skip (no bonus if they couldn't identify the horse)
       const isLast = exerciseIndexRef.current >= deck.length - 1;
-      if (isLast) {
-        // Last card — just reveal the word, no "let's try another one"
-        const audioPath = `/audio/${audioId}-reveal.mp3`;
-        const msg = `This is a ${exercise.word}.`;
-        setFeedbackText(msg);
-        setPhase('giveAnswer');
-        speak(audioPath, msg);
-      } else {
-        const audioPath = `/audio/${audioId}-skip.mp3`;
-        const msg = `This is a ${exercise.word}. Let's try another one!`;
-        setFeedbackText(msg);
-        setPhase('giveAnswer');
-        speak(audioPath, msg);
-      }
+      const audioPath = `/audio/${audioId}-skip.mp3`;
+      const msg = "Let's try another one!";
+      setFeedbackText(msg);
+      setPhase('giveAnswer');
+      speak(audioPath, msg);
       advanceToNext(3500);
     } else if (curAttempt === 1) {
-      // First wrong: reveal word
-      const audioPath = `/audio/${audioId}-reveal.mp3`;
-      const msg = `This is a ${exercise.word}. Can you say ${exercise.word}?`;
+      // First wrong: simple "try again"
+      const audioPath = `/audio/try-again.mp3`;
+      const msg = 'No, please try again.';
       setFeedbackText(msg);
       setAttemptNumber(2);
       attemptNumberRef.current = 2;
@@ -812,9 +803,9 @@ export default function DemoApp() {
       speak(audioPath, msg);
       processingRef.current = false;
     } else {
-      // Second wrong: encourage
-      const audioPath = `/audio/${audioId}-encourage.mp3`;
-      const msg = `Say it with me: ${exercise.word}!`;
+      // Second wrong: reveal word with pause for mic
+      const audioPath = `/audio/${audioId}-reveal.mp3`;
+      const msg = `No, this is a ${exercise.word}. Say it with me... ${exercise.word}!`;
       setFeedbackText(msg);
       setAttemptNumber(curAttempt + 1);
       attemptNumberRef.current = curAttempt + 1;

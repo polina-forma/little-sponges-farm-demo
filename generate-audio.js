@@ -37,27 +37,26 @@ function getAllPhrases() {
   // Universal intro (same for every card)
   phrases.push({ file: 'what-is-this', text: 'What is this?' });
 
+  // Universal attempt 1 wrong
+  phrases.push({ file: 'try-again', text: 'No, please try again.' });
+
   // Per-animal phrases
   for (const { id, word } of ANIMALS) {
     // Correct
     phrases.push({ file: `${id}-correct`, text: `Yes! This is a ${word}!` });
 
-    // Reveal (attempt 1 wrong)
-    phrases.push({ file: `${id}-reveal`, text: `This is a ${word}. Can you say ${word}?` });
-
-    // Encourage (attempt 2 wrong)
-    phrases.push({ file: `${id}-encourage`, text: `Say it with me: ${word}!` });
+    // Reveal (attempt 2 wrong — with pause for mic)
+    phrases.push({ file: `${id}-reveal`, text: `No, this is a ${word}. Say it with me... ${word}!` });
 
     // Skip (attempt 3 — move on)
-    phrases.push({ file: `${id}-skip`, text: `This is a ${word}. Let's try another one!` });
+    phrases.push({ file: `${id}-skip`, text: `Let's try another one!` });
   }
 
   // Horse bonus color question
   phrases.push({ file: 'horse-color-ask', text: 'What color is the horse?' });
   phrases.push({ file: 'horse-color-correct', text: "Yes! It's a brown horse. Good job!" });
-  phrases.push({ file: 'horse-color-reveal', text: 'The horse is brown. Can you say brown?' });
-  phrases.push({ file: 'horse-color-encourage', text: 'Say it with me: brown!' });
-  phrases.push({ file: 'horse-color-skip', text: "The horse is brown. Let's try another one!" });
+  phrases.push({ file: 'horse-color-reveal', text: 'No, the horse is brown. Say it with me... brown!' });
+  phrases.push({ file: 'horse-color-skip', text: "Let's try another one!" });
 
   // Completion screen
   phrases.push({ file: 'complete-great', text: "Great job! You did amazing today!" });
