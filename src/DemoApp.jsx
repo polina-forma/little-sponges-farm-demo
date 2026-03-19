@@ -738,7 +738,7 @@ export default function DemoApp() {
         setPhase('respond');
         speak('/audio/try-again.mp3', 'No, please try again.');
       } else {
-        setFeedbackText('No, the horse is brown. Say it with me... brown!');
+        setFeedbackText(<>No, the horse is brown. Say it with me: <i>brown</i></>);
         setBonusAttempt(curBonusAttempt + 1);
         bonusAttemptRef.current = curBonusAttempt + 1;
         setPhase('respond');
@@ -788,12 +788,11 @@ export default function DemoApp() {
       speak('/audio/try-again.mp3', 'No, please try again.');
     } else {
       const audioPath = `/audio/${audioId}-reveal.mp3`;
-      const msg = `No, this is a ${exercise.word}. Say it with me... ${exercise.word}!`;
-      setFeedbackText(msg);
+      setFeedbackText(<>No, this is a {exercise.word}. Say it with me: <i>{exercise.word}</i></>);
       setAttemptNumber(curAttempt + 1);
       attemptNumberRef.current = curAttempt + 1;
       setPhase('respond');
-      speak(audioPath, msg);
+      speak(audioPath, `No, this is a ${exercise.word}. Say it with me... ${exercise.word}!`);
     }
   }, [transcriptId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -918,7 +917,7 @@ export default function DemoApp() {
           </div>
 
           <h1 style={{ color: BRAND.orange, fontSize: 36, fontWeight: 900, margin: '0 0 8px' }}>
-            Great Job!
+            {score >= 4 ? 'Great Job!' : 'Good Try!'}
           </h1>
           <p style={{ color: BRAND.teal, fontSize: 24, fontWeight: 700, margin: '0 0 16px' }}>
             {score} out of {deck.length} correct!
