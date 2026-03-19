@@ -46,7 +46,7 @@ function getAllPhrases() {
     phrases.push({ file: `${id}-correct`, text: `Yes! This is a ${word}!` });
 
     // Reveal (attempt 2 wrong — with pause for mic)
-    phrases.push({ file: `${id}-reveal`, text: `No, this is a ${word}. Say it with me... ${word}!` });
+    phrases.push({ file: `${id}-reveal`, text: `This is a ${word}. Say it with me... ${word}!` });
 
     // Skip (attempt 3 — move on)
     phrases.push({ file: `${id}-skip`, text: `Let's try another one!` });
@@ -55,7 +55,7 @@ function getAllPhrases() {
   // Horse bonus color question
   phrases.push({ file: 'horse-color-ask', text: 'What color is the horse?' });
   phrases.push({ file: 'horse-color-correct', text: "Yes! It's a brown horse. Good job!" });
-  phrases.push({ file: 'horse-color-reveal', text: 'No, the horse is brown. Say it with me... brown!' });
+  phrases.push({ file: 'horse-color-reveal', text: 'The horse is brown. Say it with me... brown!' });
   phrases.push({ file: 'horse-color-skip', text: "Let's try another one!" });
 
   // Completion screen

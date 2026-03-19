@@ -766,9 +766,9 @@ export default function DemoApp() {
         updateGame({ bonusAttempt: 2 });
         speak('/audio/try-again.mp3', 'No, please try again.');
       } else {
-        setFeedbackText(<>No, the horse is brown. Say it with me: <i>brown</i></>);
+        setFeedbackText(<>The horse is brown. Say it with me: <i>brown</i></>);
         updateGame({ bonusAttempt: g.bonusAttempt + 1 });
-        speak('/audio/horse-color-reveal.mp3', 'No, the horse is brown. Say it with me... brown!');
+        speak('/audio/horse-color-reveal.mp3', 'The horse is brown. Say it with me... brown!');
       }
       return;
     }
@@ -811,9 +811,9 @@ export default function DemoApp() {
       speak('/audio/try-again.mp3', 'No, please try again.');
     } else {
       const audioPath = `/audio/${audioId}-reveal.mp3`;
-      setFeedbackText(<>No, this is a {exercise.word}. Say it with me: <i>{exercise.word}</i></>);
+      setFeedbackText(<>This is a {exercise.word}. Say it with me: <i>{exercise.word}</i></>);
       updateGame({ attemptNumber: g.attemptNumber + 1 });
-      speak(audioPath, `No, this is a ${exercise.word}. Say it with me... ${exercise.word}!`);
+      speak(audioPath, `This is a ${exercise.word}. Say it with me... ${exercise.word}!`);
     }
   }, [transcriptId]); // eslint-disable-line react-hooks/exhaustive-deps
 
