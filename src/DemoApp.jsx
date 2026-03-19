@@ -777,7 +777,10 @@ export default function DemoApp() {
       const audioPath = `/audio/${audioId}-correct.mp3`;
       const msg = `Yes! This is a ${exercise.word}!`;
       setFeedbackText(msg);
-      setCorrectIds((prev) => new Set([...prev, exercise.id]));
+      // Only award a star if they got it right on the first try
+      if (g.attemptNumber === 1) {
+        setCorrectIds((prev) => new Set([...prev, exercise.id]));
+      }
       updateGame({ phase: 'celebrate' });
       speak(audioPath, msg);
 
