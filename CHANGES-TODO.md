@@ -22,6 +22,11 @@
 - [ ] User accounts and progress tracking
 - [ ] Parent/teacher dashboard
 
+## Follow-ups from Demo (March 24, 2026)
+- [x] Send ElevenLabs link to Natalya (elevenlabs.io) — drafted in Gmail
+- [ ] Frog "not talking" clip — troubleshoot / create clip of frog in idle/non-speaking state
+- [ ] Natalya to send curriculum content (waiting on her)
+
 ## Deployment
 - [ ] Push to GitHub
 - [ ] Run `npm install` to install concurrently
