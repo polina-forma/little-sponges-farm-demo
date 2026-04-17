@@ -55,9 +55,15 @@ function getAllPhrases() {
   phrases.push({ file: 'complete-great', text: "Great job! You did amazing today." });
   phrases.push({ file: 'complete-good-try', text: "Good try! You did amazing today." });
 
-  // ─── Favorite question ───
-  phrases.push({ file: 'favorite-ask', text: 'What is your favorite animal?' });
-  phrases.push({ file: 'favorite-reprompt', text: 'Tell me a farm animal you like.' });
+  // ─── Favorite question (2-attempt flow) ───
+  // Try 1 wrong → classified rejection + re-prompt
+  // Try 2 wrong → hint with a fixed pair (cow / horse)
+  // Try 3+     → graceful wrap-up
+  phrases.push({ file: 'favorite-ask', text: 'What is your favorite farm animal?' });
+  phrases.push({ file: 'favorite-not-farm', text: "That's not a farm animal. What is your favorite farm animal?" });
+  phrases.push({ file: 'favorite-not-animal', text: "That's not an animal. What is your favorite farm animal?" });
+  phrases.push({ file: 'favorite-hint', text: "Let's pick together. How about a cow or a horse?" });
+  phrases.push({ file: 'favorite-wrapup', text: "That's okay. Let's keep exploring!" });
 
   // Per-animal favorite responses (use proper plurals)
   for (const { word, plural } of ANIMALS) {

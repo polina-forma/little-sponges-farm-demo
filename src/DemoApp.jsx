@@ -37,27 +37,71 @@ const ANIMAL_POOL = [
   { id: 'turkey', image: '/images/unit1/Turkey.png', word: 'turkey', plural: 'turkeys', color: 'brown', count: 1, type: 'bird' },
 ];
 
-// Tier 1 question variants — randomly picked per card
+// Tier 1 question variants — randomly picked per card.
+// NOTE: only what-is-this.mp3 currently exists on disk. Add the other
+// variant entries back to each array once the matching audio files are
+// recorded (what-animal-is-this.mp3, what-animal-do-you-see.mp3,
+// what-bird-is-this.mp3, what-bird-do-you-see.mp3).
 const NAME_QUESTIONS = {
   animal: [
     { audio: '/audio/what-is-this.mp3', text: 'What is this?' },
-    { audio: '/audio/what-animal-is-this.mp3', text: 'What animal is this?' },
-    { audio: '/audio/what-animal-do-you-see.mp3', text: 'What animal do you see?' },
   ],
   bird: [
     { audio: '/audio/what-is-this.mp3', text: 'What is this?' },
-    { audio: '/audio/what-bird-is-this.mp3', text: 'What bird is this?' },
-    { audio: '/audio/what-bird-do-you-see.mp3', text: 'What bird do you see?' },
   ],
 };
 
 // All valid farm animal words (for open-ended "favorite" question)
 const ALL_ANIMAL_WORDS = ANIMAL_POOL.map((a) => a.word);
 
+// Group image used on the final "favorite farm animal" screen.
+// If this file is missing, replace with a file you have, or save
+// the farm-animals collage here.
+const FARM_ANIMALS_IMAGE = '/images/unit1/All-Farm-Animals.jpg';
+
+// Common animals kids might name that are NOT farm animals.
+// Used to differentiate "that's not a farm animal" from "that's not an
+// animal" on the final favorite question.
+const COMMON_ANIMALS = [
+  'dog', 'puppy', 'cat', 'kitten', 'kitty', 'bunny',
+  'lion', 'tiger', 'cheetah', 'leopard', 'jaguar', 'panther',
+  'elephant', 'giraffe', 'zebra', 'rhino', 'rhinoceros', 'hippo', 'hippopotamus',
+  'monkey', 'gorilla', 'chimp', 'chimpanzee', 'ape', 'orangutan',
+  'panda', 'bear', 'polar bear', 'grizzly', 'koala', 'kangaroo', 'wallaby',
+  'wolf', 'coyote', 'fox', 'deer', 'moose', 'elk', 'reindeer',
+  'raccoon', 'squirrel', 'chipmunk', 'hamster', 'gerbil', 'mouse', 'rat',
+  'bat', 'hedgehog', 'skunk', 'beaver', 'otter', 'seal', 'walrus',
+  'owl', 'eagle', 'hawk', 'falcon', 'parrot', 'cockatoo',
+  'penguin', 'flamingo', 'peacock', 'crow', 'raven', 'dove', 'pigeon',
+  'sparrow', 'robin', 'hummingbird', 'bluebird', 'woodpecker', 'bird',
+  'fish', 'shark', 'whale', 'dolphin', 'octopus', 'squid', 'jellyfish',
+  'crab', 'lobster', 'shrimp', 'seahorse', 'starfish',
+  'turtle', 'tortoise', 'frog', 'toad', 'snake', 'lizard', 'gecko',
+  'alligator', 'crocodile', 'iguana', 'dinosaur', 't-rex', 'dragon', 'unicorn',
+  'spider', 'bee', 'wasp', 'butterfly', 'moth', 'ant', 'snail',
+  'worm', 'ladybug', 'beetle', 'dragonfly', 'caterpillar',
+  'camel', 'llama', 'alpaca', 'buffalo', 'bison', 'yak',
+];
+
 // Shuffle and pick N
 function pickRandom(arr, n) {
   const shuffled = [...arr].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, n);
+}
+
+// Build a deck of CARDS_PER_GAME cards.
+// Always includes exactly one "multi-animal" card (rabbit or goose, 50/50)
+// plus (CARDS_PER_GAME - 1) random single-animal cards from the rest of the
+// pool, shuffled so the multi-animal card can appear in any position.
+// The multi-animal card is the only one that gets a "how many" question;
+// all cards get "what is this" + "what color".
+function buildDeck() {
+  const multiAnimalIds = ['rabbit', 'goose'];
+  const multiPool = ANIMAL_POOL.filter((a) => multiAnimalIds.includes(a.id));
+  const singlePool = ANIMAL_POOL.filter((a) => !multiAnimalIds.includes(a.id));
+  const multi = multiPool[Math.floor(Math.random() * multiPool.length)];
+  const randomSingles = pickRandom(singlePool, CARDS_PER_GAME - 1);
+  return [multi, ...randomSingles].sort(() => Math.random() - 0.5);
 }
 
 // ─── Brand Colors (Little Sponges game palette) ───
@@ -376,7 +420,13 @@ function StarRow({ score }) {
 }
 
 // ─── Frog Video Avatar ───
-const FROG_VIDEOS = { idle: '/videos/frog-idle.mp4', correct: '/videos/frog-correct.mp4', tryagain: '/videos/frog-tryagain.mp4' };
+const FROG_VIDEOS = { idle: '/videos/frog-idle.mp4', talking: '/videos/frog-talking.mp4', correct: '/videos/frog-correct.mp4', tryagain: '/videos/frog-tryagain.mp4' };
+// Per-state scale factor. All four source videos are now spatially normalized
+// at the ffmpeg level (body height ~1100px, bottom y=1820, center x=540 in
+// their 1080x1920 frame), so no per-state scaling is needed. Originals are
+// preserved in public/videos/_originals/ if we ever need to re-normalize with
+// different targets.
+const FROG_SCALES = { correct: 1.00, tryagain: 1.00, idle: 1.00, talking: 1.00 };
 
 function FrogAvatar({ size = 360, state = 'idle' }) {
   const videoRef = useRef(null);
@@ -418,11 +468,15 @@ function FrogAvatar({ size = 360, state = 'idle' }) {
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current); video.removeEventListener('play', onPlay); };
   }, [currentSrc]);
 
+  const scale = FROG_SCALES[state] ?? 1;
   return (
-    <div style={{ width: size, height: size, position: 'relative', flexShrink: 0 }}>
+    <div style={{ width: size, height: size, position: 'relative', flexShrink: 0, overflow: 'hidden' }}>
       <video ref={videoRef} src={currentSrc} autoPlay loop muted playsInline
         style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      <canvas ref={canvasRef}
+        style={{ width: '100%', height: '100%', objectFit: 'contain',
+          transform: `scale(${scale})`, transformOrigin: '50% 100%',
+          transition: 'transform 180ms ease-out' }} />
     </div>
   );
 }
@@ -483,7 +537,7 @@ function MicButton({ listening, onClick, disabled }) {
  */
 
 export default function DemoApp() {
-  const [deck, setDeck] = useState(() => pickRandom(ANIMAL_POOL, CARDS_PER_GAME));
+  const [deck, setDeck] = useState(() => buildDeck());
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [questionTier, setQuestionTier] = useState('name'); // name | color | count
   const [phase, setPhase] = useState('start'); // start | intro | respond | feedback | giveAnswer | celebrate | complete | favorite
@@ -499,6 +553,8 @@ export default function DemoApp() {
   const gameOverRef = useRef(false);
   const completionPlayedRef = useRef(false);
   const lastProcessedTranscriptId = useRef(0);
+  // Favorite screen: 3-attempt counter (0 = no wrong answers yet)
+  const favoriteAttemptsRef = useRef(0);
   const score = correctIds.size;
 
   const updateGame = useCallback((updates) => {
@@ -535,7 +591,7 @@ export default function DemoApp() {
     } else if (tier === 'count') {
       speak(`/audio/${animal.id}-count-ask.mp3`, `How many ${animal.plural} do you see?`);
     } else if (tier === 'favorite') {
-      speak('/audio/favorite-ask.mp3', 'What is your favorite animal?');
+      speak('/audio/favorite-ask.mp3', 'What is your favorite farm animal?');
     }
   }, [speak, cancelTimers, updateGame]);
 
@@ -545,10 +601,14 @@ export default function DemoApp() {
     askQuestion('name', deck[gameRef.current.exerciseIndex]);
   }, [askQuestion, deck]);
 
-  // Handle "start" button tap
+  // Handle "start" button tap — wait for greeting to finish before transitioning
+  // so the first prompt doesn't cut off the greeting audio.
   const handleStart = useCallback(() => {
-    speak('/audio/greeting.mp3', "Hello. Let's look at the pictures.");
-    setTimeout(() => { setPhase('intro'); gameRef.current.phase = 'intro'; }, 2500);
+    speak('/audio/greeting.mp3', "Hello. Let's look at the pictures.").then(() => {
+      if (gameOverRef.current) return;
+      gameRef.current.phase = 'intro';
+      setPhase('intro');
+    });
   }, [speak]);
 
   // Auto-start on exercise change
@@ -571,9 +631,10 @@ export default function DemoApp() {
       } else {
         // All cards done → ask favorite question
         gameOverRef.current = true;
+        favoriteAttemptsRef.current = 0;
         updateGame({ phase: 'favorite', questionTier: 'favorite' });
-        setFeedbackText('What is your favorite animal?');
-        speak('/audio/favorite-ask.mp3', 'What is your favorite animal?');
+        setFeedbackText('');
+        speak('/audio/favorite-ask.mp3', 'What is your favorite farm animal?');
       }
     }, delay);
   }, [deck.length, cancelTimers, updateGame, speak]);
@@ -583,10 +644,17 @@ export default function DemoApp() {
     advanceTimerRef.current = setTimeout(() => {
       if (gameOverRef.current) return;
       const animal = deck[gameRef.current.exerciseIndex];
+      // Every card asks name + color.
+      // Count is only asked on multi-animal cards (rabbit, goose) — flagged
+      // via `count > 1` in the ANIMAL_POOL config.
       if (currentTier === 'name') {
         askQuestion('color', animal);
       } else if (currentTier === 'color') {
-        askQuestion('count', animal);
+        if (animal.count > 1) {
+          askQuestion('count', animal);
+        } else {
+          advanceToNextCard(0);
+        }
       } else {
         // After count, move to next card
         advanceToNextCard(0);
@@ -621,22 +689,53 @@ export default function DemoApp() {
     const animal = deck[g.exerciseIndex] || deck[0];
     console.log(`[PROCESS] tier=${tier}, transcript="${transcript}", attempt=${g.attemptNumber}`);
 
-    // ── FAVORITE (open-ended, accept any farm animal) ──
+    // ── FAVORITE (open-ended, 3-attempt limit) ──
     if (tier === 'favorite') {
+      // 1) Right answer → celebrate and complete, regardless of attempt #
       const matchedAnimal = ANIMAL_POOL.find((a) => fuzzyMatch(alternatives, a.word));
       if (matchedAnimal) {
         const favPlural = matchedAnimal.plural;
-        setFeedbackText(`I love ${favPlural} too! Great choice.`);
+        const msg = `I love ${favPlural} too! Great choice.`;
+        setFeedbackText(msg);
         updateGame({ phase: 'celebrate' });
-        speak(`/audio/favorite-${matchedAnimal.word}.mp3`, `I love ${favPlural} too! Great choice.`);
+        speak(`/audio/favorite-${matchedAnimal.word}.mp3`, msg);
         setTimeout(() => {
           updateGame({ phase: 'complete' });
         }, 3000);
+        return;
+      }
+
+      // 2) Wrong answer → advance the 2-attempt counter
+      favoriteAttemptsRef.current += 1;
+      const attempt = favoriteAttemptsRef.current;
+
+      if (attempt === 1) {
+        // Two-tier classification: known animal but not farm vs not an animal at all
+        const isKnownAnimal = COMMON_ANIMALS.some((w) => fuzzyMatch(alternatives, w));
+        const classification = isKnownAnimal
+          ? "That's not a farm animal."
+          : "That's not an animal.";
+        const msg = `${classification} What is your favorite farm animal?`;
+        setFeedbackText(msg);
+        speak(
+          isKnownAnimal ? '/audio/favorite-not-farm.mp3' : '/audio/favorite-not-animal.mp3',
+          msg,
+        );
+      } else if (attempt === 2) {
+        // Hint with a fixed pair so the pre-recorded mp3 matches the text.
+        // Cow + horse are the most familiar animals in the pool.
+        const msg = "Let's pick together. How about a cow or a horse?";
+        setFeedbackText(msg);
+        speak('/audio/favorite-hint.mp3', msg);
       } else {
-        // Gently re-prompt
-        setFeedbackText('Tell me a farm animal you like.');
-        speak('/audio/favorite-reprompt.mp3', 'Tell me a farm animal you like.');
-        // Stay in favorite phase, don't increment attempts
+        // After the hint, wrap up gracefully and move to the complete screen
+        const msg = "That's okay. Let's keep exploring!";
+        setFeedbackText(msg);
+        updateGame({ phase: 'celebrate' });
+        speak('/audio/favorite-wrapup.mp3', msg);
+        setTimeout(() => {
+          updateGame({ phase: 'complete' });
+        }, 3000);
       }
       return;
     }
@@ -681,21 +780,18 @@ export default function DemoApp() {
       updateGame({ phase: 'celebrate' });
       speak(audioPath, msg);
 
-      // If correct on first try → go deeper. Otherwise skip to next card.
-      if (g.attemptNumber === 1) {
-        advanceToNextTier(tier, 2500);
-      } else {
-        advanceToNextCard(2500);
-      }
+      // Every card gets all 3 tiers (name → color → count), regardless of attempt number.
+      // After the count tier, advanceToNextTier falls through to advanceToNextCard.
+      advanceToNextTier(tier, 2500);
       return;
     }
 
-    // ── WRONG — max attempts reached ──
+    // ── WRONG — max attempts reached → move on to next tier on the same card ──
     if (g.attemptNumber >= MAX_ATTEMPTS) {
       setFeedbackText("Let's try another one.");
       updateGame({ phase: 'giveAnswer' });
       speak('/audio/lets-try-another.mp3', "Let's try another one.");
-      advanceToNextCard(3500);
+      advanceToNextTier(tier, 3500);
       return;
     }
 
@@ -748,7 +844,8 @@ export default function DemoApp() {
     gameOverRef.current = false;
     completionPlayedRef.current = false;
     lastProcessedTranscriptId.current = 0;
-    const newDeck = pickRandom(ANIMAL_POOL, CARDS_PER_GAME);
+    favoriteAttemptsRef.current = 0;
+    const newDeck = buildDeck();
     setDeck(newDeck);
     Object.assign(gameRef.current, { exerciseIndex: 0, attemptNumber: 1, phase: 'intro', questionTier: 'name' });
     setExerciseIndex(0);
@@ -770,7 +867,7 @@ export default function DemoApp() {
         <div style={{ position: 'fixed', top: 14, left: 20, zIndex: 10 }}><LittleSpongesLogo /></div>
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, zIndex: 1 }}>
-          <FrogAvatar size={300} state="idle" />
+          <FrogAvatar size={500} state={speaking ? 'talking' : 'idle'} />
           <motion.div animate={{ scale: [1, 1.08, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}
             style={{ background: `radial-gradient(circle at 35% 35%, ${BRAND.hotPink}, ${BRAND.hotPinkDark})`,
               borderRadius: 30, padding: '20px 50px', border: `4px solid ${BRAND.hotPinkDark}`,
@@ -823,7 +920,9 @@ export default function DemoApp() {
   // ════════════════════════════════════════════════════
   // ─── FAVORITE QUESTION SCREEN ──────────────────────
   // ════════════════════════════════════════════════════
-  if (phase === 'favorite') {
+  // Also render this screen during the celebrate sub-phase so we don't
+  // flash back to the last animal card when the child gives their answer.
+  if (phase === 'favorite' || (phase === 'celebrate' && gameOverRef.current)) {
     return (
       <div style={{ height: '100vh', overflow: 'hidden', fontFamily: "'Nunito', sans-serif",
         display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
@@ -831,32 +930,40 @@ export default function DemoApp() {
         <div style={{ position: 'fixed', top: 14, left: 20, zIndex: 10 }}><LittleSpongesLogo /></div>
 
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, zIndex: 1 }}>
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, zIndex: 1 }}>
+
           <StarRow score={score} />
 
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-            style={{ background: 'rgba(255,255,255,0.95)', borderRadius: 28, padding: '40px 50px',
-              border: `6px solid ${BRAND.gold}`, boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-              textAlign: 'center', maxWidth: 500 }}>
-            <div style={{ fontSize: 60, marginBottom: 12 }}>🐾</div>
-            <h2 style={{ fontFamily: "'Nunito', sans-serif", fontSize: 28, fontWeight: 800, color: BRAND.teal, margin: '0 0 8px' }}>
-              What is your favorite animal?
-            </h2>
-            <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 16, color: BRAND.gray, margin: 0 }}>
-              Tell me which farm animal you like best!
-            </p>
+          {/* Prompt label above the card — matches the main game layout */}
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+            style={{ fontFamily: "'Nunito', sans-serif", fontSize: 22, fontWeight: 800, color: BRAND.white,
+              textShadow: `2px 2px 6px ${BRAND.teal}`, textAlign: 'center' }}>
+            What is your favorite farm animal?
           </motion.div>
 
-          <MicButton listening={listening} onClick={handleMic} disabled={false} />
+          {/* Farm-animals collection card */}
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}
+            style={{ width: 600, height: 450, borderRadius: 28, overflow: 'hidden',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)', border: `6px solid ${BRAND.gold}`, background: BRAND.white }}>
+            <img src={FARM_ANIMALS_IMAGE} alt="Farm animals"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </motion.div>
 
-          {transcript && (
-            <div style={{ fontSize: 11, color: BRAND.gray, marginTop: 4, opacity: 0.6 }}>Heard: "{transcript}"</div>
-          )}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minHeight: 140 }}>
+            {phase === 'favorite' && <MicButton listening={listening} onClick={handleMic} disabled={false} />}
+            {phase === 'celebrate' && (
+              <motion.div initial={{ scale: 0 }} animate={{ scale: [0, 1.3, 1] }} style={{ fontSize: 80 }}>🎉</motion.div>
+            )}
+            {transcript && (
+              <div style={{ fontSize: 11, color: BRAND.gray, marginTop: 4, opacity: 0.6 }}>Heard: "{transcript}"</div>
+            )}
+          </div>
         </div>
 
-        <div style={{ position: 'absolute', top: 'calc(50% - 65px)', left: 'calc(50% + 220px)',
+        {/* Frog — same position + size as the main game */}
+        <div style={{ position: 'absolute', top: 'calc(50% - 65px)', left: 'calc(50% + 260px)',
           transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, zIndex: 1 }}>
-          <FrogAvatar size={500} state="idle" />
+          <FrogAvatar size={500} state={phase === 'celebrate' ? 'correct' : speaking ? 'talking' : 'idle'} />
           <AnimatePresence><SpeechBubble text={feedbackText} visible={!!feedbackText} /></AnimatePresence>
         </div>
       </div>
@@ -900,7 +1007,9 @@ export default function DemoApp() {
         </motion.div>
 
         <AnimatePresence mode="wait">
-          <motion.div key={`${exercise.id}-${questionTier}`}
+          {/* Keyed on exercise.id only, so the card animates in once per card
+              and stays put while the tier (name → color → count) changes. */}
+          <motion.div key={exercise.id}
             initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.4 }}
             style={{ width: 600, height: 450, borderRadius: 28, overflow: 'hidden',
@@ -929,7 +1038,7 @@ export default function DemoApp() {
       <div style={{ position: 'absolute', top: 'calc(50% - 65px)', left: 'calc(50% + 260px)',
         transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, zIndex: 1 }}>
         <FrogAvatar size={500}
-          state={phase === 'celebrate' ? 'correct' : phase === 'giveAnswer' ? 'tryagain' : 'idle'} />
+          state={phase === 'celebrate' ? 'correct' : phase === 'giveAnswer' ? 'tryagain' : speaking ? 'talking' : 'idle'} />
         <AnimatePresence><SpeechBubble text={feedbackText} visible={!!feedbackText} /></AnimatePresence>
       </div>
     </div>
